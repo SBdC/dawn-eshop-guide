@@ -1,0 +1,221 @@
+<div class="outfit-set-section">
+    <style>
+        .outfit-featured-products-list { display: flex; flex-wrap: wrap; gap: 2em; justify-content: center; margin-bottom: 2em;}
+        .outfit-featured-product {
+            border: 1px solid grey;
+            border-radius: 24px;
+            background: #fff;
+            width: 280px;
+            text-align: left;
+            padding: 1.5em;
+            position:relative;
+        }
+        .outfit-featured-product img {
+            width: 100%;
+            max-width: 200px;
+            margin-bottom: 1em;
+        }
+        .outfit-featured-title {
+            font-size: 1.1em;
+            margin: .4em 0 .2em 0;
+            font-weight:600;
+        }
+        .outfit-featured-price {
+            font-weight:600;
+            font-size: 1.1em;
+            margin-bottom: 0.5em;
+        }
+        .outfit-featured-controls {
+            margin: .7em 0 0 0;
+        }
+        .outfit-outfit-qty {
+            width:50px;
+        }
+        .outfit-outfit-checkbox {
+            position:absolute;
+            top: 1em;
+            right: 1em;
+        }
+        .outfit-add-success {
+            text-align:center; color: lime;
+            margin:1em 0;
+            display:none;
+        }
+        .outfit-add-all-btn {
+            display:block;
+            margin:2em auto;
+            font-size:1.2em;
+            padding:1em 2em;
+            background:blue;
+            color:#fff;
+            border:none;
+            border-radius:6px;
+            cursor:pointer;
+        }
+        .outfit-add-success {
+            color:green;
+        }
+
+        .outfit-add-fail {
+            color:red;
+        }
+        .outfit-add-loader,  .outfit-add-success,  .outfit-add-fail{
+            display:none;
+            text-align:center;
+        }
+    </style>
+
+    {% assign outfit_products = page.metafields.custom.outfit_products.value %}
+    {% if outfit_products %}
+        <div class="outfit-featured-products-section">
+            <h2 style="text-align: center;">Featured Products</h2>
+            {% assign outfit_products = page.metafields.custom.outfit_products.value %}
+            {% if outfit_products%}
+            <form id="outfit-add-all-form-{{ section.id }}">
+                <div class="outfit-featured-products-list">
+                    {% for product in outfit_products %}
+                        {% assign pidx = forloop.index0 %}
+                        <div class="outfit-featured-product" data-index="{{ pidx }}">
+                            <input type="checkbox" class="outfit-outfit-checkbox" checked data-index="{{ pidx }}">
+                            <a href="{{ product.url }}">
+                                {% if product.featured_image %}
+                                    <img src="{{ product.featured_image | image_url: width: 400 }}" alt="{{ product.title }}">
+                                {% endif %}
+                            </a>
+                            <div class="outfit-featured-title">{{ product.title }}</div>
+                            <div class="outfit-featured-price">
+                                {% if product.price_varies %}
+                                    From {{ product.price | money }}
+                                {% else %}
+                                    {{ product.price | money }}
+                                {% endif %}
+                            </div>
+                            <div class="outfit-featured-controls">
+                                {% if product.variants.size > 1 %}
+                                    <select name="variant" class="outfit-variant-select" data-index="{{ pidx }}">
+                                        {% for variant in product.variants %}
+                                            <option value="{{ variant.id }}" {% if variant.available == false %}disabled{% endif %}>
+                                                {{ variant.title }} {% if variant.available == false %}(Sold out){% endif %}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                {% else %}
+                                    <!-- single variant, just hidden input -->
+                                    <input type="hidden" class="outfit-variant-select" value="{{ product.variants.first.id }}" data-index="{{ pidx }}">
+                                    <span>{{ product.variants.first.title }}</span>
+                                {% endif %}
+                                <label>Qty:
+                                    <input type="number" min="1" value="1" class="outfit-outfit-qty" data-index="{{ pidx }}">
+                                </label>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <button type="button" class="outfit-add-all-btn">
+                    Add all selected to cart
+                </button>
+                <div class="outfit-add-success" id="outfit-add-success-{{ section.id }}"></div>
+                <div class="outfit-add-fail" id="outfit-add-fail-{{ section.id }}"></div>
+                <div class="outfit-add-loader" id="outfit-add-loader-{{ section.id }}">
+                    <span>Adding to cart...</span>
+                </div>
+
+                {% else %}
+                    <p style="text-align:center;">Add some products using metafield outfit_products</p>
+                {% endif %}
+
+    {% endif %}
+      <script>
+                    (function(){
+                        const form = document.getElementById('outfit-add-all-form-{{ section.id }}');
+                        if (!form) return;
+                        const btn = form.querySelector('.outfit-add-all-btn');
+                        const successMsg = document.getElementById('outfit-add-success-{{ section.id }}');
+                        const failMsg = document.getElementById('outfit-add-fail-{{ section.id }}');
+                        const loader = document.getElementById('outfit-add-loader-{{ section.id }}');
+
+                        function resetMessages() {
+                            if(successMsg) successMsg.style.display = 'none';
+                            if(failMsg) failMsg.style.display = 'none';
+                            if(loader) loader.style.display = 'none';
+                        }
+
+                        btn.addEventListener('click', function(e){
+                            e.preventDefault();
+                            resetMessages();
+
+                            const items = [];
+                            const productDivs = form.querySelectorAll('.outfit-featured-product');
+                            productDivs.forEach(function(div){
+                                const idx = div.getAttribute('data-index');
+                                const checkbox = div.querySelector('.outfit-outfit-checkbox');
+                                if (checkbox && !checkbox.checked) return;
+                                const variantSel = div.querySelector('.outfit-variant-select');
+                                const variantId = variantSel ? variantSel.value : null;
+                                const qtyInput = div.querySelector('.outfit-outfit-qty');
+                                var qty = qtyInput ? parseInt(qtyInput.value, 10) : 1;
+                                if (variantId && qty > 0) {
+                                    items.push({ id: parseInt(variantId, 10), quantity: qty });
+                                }
+                            });
+                            if (items.length === 0) {
+                                if(failMsg) {
+                                    failMsg.textContent = 'Please select at least one product.';
+                                    failMsg.style.display = 'block';
+                                }
+                                return;
+                            }
+                            if(loader) loader.style.display = 'block';
+                            btn.disabled = true;
+
+                            fetch('/cart/add.js', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                                body: JSON.stringify({items: items})
+                            })
+                                .then(async function(r) {
+                                    if(!r.ok) {
+                                        let errorData;
+                                        try { errorData = await r.json(); } catch(_){}
+                                        throw (errorData && errorData.description) ? errorData.description : "Request failed";
+                                    }
+                                    return r.json();
+                                })
+                                .then(function(data) {
+                                    resetMessages();
+                                    if (data && data.status && data.description) {
+                                        if(failMsg) {
+                                            failMsg.textContent = data.description;
+                                            failMsg.style.display = 'block';
+                                            failMsg.scrollIntoView({behavior:"smooth"});
+                                        }
+                                    } else if(successMsg) {
+                                        successMsg.textContent = "All selected items added to your cart!";
+                                        successMsg.style.display = 'block';
+                                        successMsg.scrollIntoView({behavior:"smooth"});
+                                    }
+                                })
+                                .catch(function(error) {
+                                    resetMessages();
+                                    if(failMsg) {
+                                        failMsg.textContent = error && error.toString ? error.toString() : "Sorry, something went wrong. Please try again.";
+                                        failMsg.style.display = 'block';
+                                        failMsg.scrollIntoView({behavior:"smooth"});
+                                    }
+                                })
+                                .finally(function(){
+                                    btn.disabled = false;
+                                    if(loader) loader.style.display = 'none';
+                                });
+                        });
+                    })();
+       </script>
+{% schema %}
+    {
+        "name": "Outfit Set / Bundle",
+        "settings": [],
+        "presets": [
+            { "name": "Outfit Set" }
+          ]
+    }
+{% endschema %}

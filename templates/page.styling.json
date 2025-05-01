@@ -4,8 +4,12 @@
     "main": {
       "type": "styling"
     },
+    "bundle": {
+      "type": "outfit-set"
+    }
   },
   "order": [
-    "main"
+    "main",
+    "bundle"
   ]
 }
