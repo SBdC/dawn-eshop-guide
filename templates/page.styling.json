@@ -1,0 +1,11 @@
+{
+  "name": "Styling Page",
+  "sections": {
+    "main": {
+      "type": "styling"
+    },
+  },
+  "order": [
+    "main"
+  ]
+}
