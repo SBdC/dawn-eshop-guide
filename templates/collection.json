@@ -8,6 +8,12 @@
         "color_scheme": "scheme-1"
       }
     },
+    "gender-filter": {
+      "type": "gender-filter",
+      "settings": {
+        "enable_gender_filtering": true
+      }
+    },
     "product-grid": {
       "type": "main-collection-product-grid",
       "settings": {
@@ -21,6 +27,7 @@
         "show_rating": false,
         "quick_add": "none",
         "enable_filtering": true,
+        "enable_gender_filtering": true,
         "filter_type": "horizontal",
         "enable_sorting": true,
         "columns_mobile": "2",
@@ -31,6 +38,7 @@
   },
   "order": [
     "banner",
+    "gender-filter",
     "product-grid"
   ]
 }

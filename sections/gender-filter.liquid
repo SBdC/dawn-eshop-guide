@@ -1,0 +1,76 @@
+<style>
+  .gender-filter {
+    margin-bottom: 2rem;
+  }
+
+  .gender-filter label {
+    font-weight: bold;
+    font-size: 2rem;
+  }
+</style>
+
+{% if section.settings.enable_gender_filtering %}
+  <div class="gender-filter page-width">
+    <label for="genderSelect">With whom do you identify</label>
+    <select id="genderSelect">
+      <option value="any">Does not matter</option>
+      <option value="man">Man</option>
+      <option value="woman">Woman</option>
+    </select>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const genderSelect = document.getElementById('genderSelect');
+      const storedGender = localStorage.getItem('genderPreference') || 'any';
+      genderSelect.value = storedGender;
+
+      applyGenderFilter(storedGender);
+
+      genderSelect.addEventListener('change', function () {
+        const selectedGender = this.value;
+        localStorage.setItem('genderPreference', selectedGender);
+        applyGenderFilter(selectedGender);
+      });
+
+      function applyGenderFilter(gender) {
+        document.querySelectorAll('.product-card-wrapper').forEach(card => {
+          const images = Array.from(card.querySelectorAll('img[data-gender]'));
+
+          // find a gender-specific image
+          let matchedImage = images.find(img => img.dataset.gender === gender);
+
+          // if  there is no match, fallback to the first image
+          if (!matchedImage && images.length > 0) {
+            matchedImage = images[0];
+          }
+
+          // hide all and show only the selected one
+          images.forEach(img => {
+            img.style.display = (img === matchedImage) ? 'block' : 'none';
+          });
+        });
+      }
+    });
+  </script>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Gender Filter",
+  "tag": "section",
+    "settings": [
+      {
+      "type": "checkbox",
+      "id": "enable_gender_filtering",
+      "label": "Enable gender filter",
+      "default": true
+      }
+    ],
+    "presets": [
+      {
+      "name": "Gender Filter"
+      }
+    ]
+}
+{% endschema %}
